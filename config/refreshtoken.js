@@ -5,4 +5,4 @@ const generateRefreshToken = (id) => {
 
 };
 
-module.exports = {generateToken};
+module.exports = {generateRefreshToken};
