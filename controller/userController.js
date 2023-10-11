@@ -221,7 +221,7 @@ const updatePassword = asynchHandler(async (req, res) => {
     const user = await User.findById(_id);
     if (password) {
       user.password = password;
-      const updatedPassword = await user.save();
+      const updatedPassword = await .save();
       res.json(updatedPassword);
     } else {
       res.json(user);
