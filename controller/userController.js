@@ -6,6 +6,7 @@ const validateMongoDbId = require('../utils/validateMongoDbId');
 const { generateRefreshToken } = require('../config/refreshtoken');
 const { JsonWebTokenError } = require('jsonwebtoken');
 const jwt = require('jsonwebtoken');
+const { validate } = require('../models/productModel');
 const createUser = asynchHandler(async (req, res) => {
     const email = req.body.email;
     const findUser = await User.findOne({ email: email });
@@ -164,6 +165,8 @@ const deleteaUser = asynchHandler(async (req,res) => {
     }
 });
 
+
+// Block user 
 const blockUser = asynchHandler(async(req, res) => {
     const {id} = req.params;
     validateMongoDbId(id);
@@ -185,6 +188,9 @@ const blockUser = asynchHandler(async(req, res) => {
 
     }
 });
+
+
+// Unblock user
 const unblockUser = asynchHandler(async(req, res) => {
     const {id} = req.params;
     validateMongoDbId(id);
@@ -206,5 +212,20 @@ const unblockUser = asynchHandler(async(req, res) => {
 
     });
 
+// Update password
 
-module.exports = { createUser, loginUserController, getallUser, getaUser, deleteaUser, updateaUser, blockUser, unblockUser, handleRefreshToken, logout};
+const updatePassword = asynchHandler(async (req, res) => {
+    const { _id } = req.user;
+    const { password } = req.body;
+    validateMongoDbId(_id);
+    const user = await User.findById(_id);
+    if (password) {
+      user.password = password;
+      const updatedPassword = await user.save();
+      res.json(updatedPassword);
+    } else {
+      res.json(user);
+    }
+  });
+
+module.exports = { createUser, loginUserController, getallUser, getaUser, deleteaUser, updateaUser, blockUser, unblockUser, handleRefreshToken, logout, updatePassword};
