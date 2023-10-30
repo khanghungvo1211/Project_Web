@@ -13,6 +13,7 @@ const createProduct = asynchHandler(async (req, res) => {
         throw new Error(error);
     }
 });
+
 //update product
 /*const updateProduct= asynchHandler(async (req, res) => {
     const id = req.params;
@@ -116,12 +117,7 @@ const getAllProduct = asynchHandler(async(req, res) => {
       if(skip>= productCount) throw new Error('This page does not exists');
     }
     console.log(page, limit, skip);
-
-
-
-
-
-
+    
         const product = await query;
         res.json(product);
         }
