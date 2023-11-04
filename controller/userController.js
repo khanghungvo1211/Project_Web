@@ -7,6 +7,8 @@ const { generateRefreshToken } = require('../config/refreshtoken');
 const { JsonWebTokenError } = require('jsonwebtoken');
 const jwt = require('jsonwebtoken');
 const { validate } = require('../models/productModel');
+const sendEmail = require("./emailController");
+
 const createUser = asynchHandler(async (req, res) => {
     const email = req.body.email;
     const findUser = await User.findOne({ email: email });
