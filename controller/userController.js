@@ -4,9 +4,11 @@ const asynchHandler = require('express-async-handler');
 const { generateToken } = require('../config/jwtToken');
 const validateMongoDbId = require('../utils/validateMongoDbId');
 const { generateRefreshToken } = require('../config/refreshtoken');
+const crypto = require("crypto");
 const { JsonWebTokenError } = require('jsonwebtoken');
 const jwt = require('jsonwebtoken');
 const { validate } = require('../models/productModel');
+const sendEmail = require("./emailController");
 const createUser = asynchHandler(async (req, res) => {
     const email = req.body.email;
     const findUser = await User.findOne({ email: email });
@@ -21,39 +23,49 @@ const createUser = asynchHandler(async (req, res) => {
 });
 
 // login a user
-
 const loginUserController = asynchHandler(async (req, res) => {
     const { email, password } = req.body;
-    //check if user exists or not
-    const findUser = await User.findOne({email});
-    if (findUser && (await findUser.isPasswordMatched(password))){   
-        const refreshToken = await generateRefreshToken(findUser?._id);
-        const updateuser = await User.findByIdAndUpdate(findUser.id, {
-            refreshToken: refreshToken,
-        },
-        {
-            new: true
-        });
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            maxAge: 72*60*60*1000,
-        });
-        res.json({
-            _id: findUser?._id,
-            firstname:findUser?.firstname,
-            lastname:findUser?.lastname,
-            email: findUser?.email,
-            mobile:findUser?.mobile,
-            token:generateToken(findUser?._id),
+    const findUser = await User.findOne({ email });
 
-        });
+    if (!findUser) {
+        // User not found
+        return res.status(401).json({ message: "User not found" });
+    }
 
-    } else{
-        throw new Error("Invalid Credentials");
+    const isPasswordValid = await findUser.isPasswordMatched(password);
+
+    console.log('Entered password:', password);
+    console.log('Stored hashed password:', findUser.password); // Check if this matches the stored hashed password in your database
+
+    if (!isPasswordValid) {
+        // Invalid password
+        console.log('Invalid password');
+        return res.status(401).json({ message: "Invalid password" });
     }
 
 
+    const refreshToken = await generateRefreshToken(findUser?._id);
+    const updateuser = await User.findByIdAndUpdate(findUser.id, {
+        refreshToken: refreshToken,
+    }, {
+        new: true,
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        maxAge: 72 * 60 * 60 * 1000,
+    });
+
+    res.json({
+        _id: findUser?._id,
+        firstname: findUser?.firstname,
+        lastname: findUser?.lastname,
+        email: findUser?.email,
+        mobile: findUser?.mobile,
+        token: generateToken(findUser?._id),
+    });
 });
+
 // handle refresh token
 
 const handleRefreshToken = asynchHandler(async(req, res) => {
@@ -101,26 +113,24 @@ const logout = asynchHandler(async(req,res)=>{
 
 // Update a user
 
-const updateaUser = asynchHandler(async (req,res) => {
-    console.log();
-    const {_id} = req.user;
-    validateMongDbId(_id);
-    try{
-
+const updateaUser = asynchHandler(async (req, res) => {
+    const { _id } = req.user;
+    validateMongoDbId(_id);
+    try {
         const updateUser = await User.findByIdAndUpdate(_id, {
             firstname: req?.body?.firstname,
             lastname: req?.body?.lastname,
             email: req?.body?.email,
             mobile: req?.body?.mobile,
-    },{
-        new: true,
-    });
-    res.json(updateUser);
-}      
-     catch(error){
-        throw new Error(error)
+        }, {
+            new: true,
+        });
+        res.json(updateUser);
+    } catch (error) {
+        throw new Error(error);
     }
 });
+
 
 //Get all users
 
@@ -229,14 +239,14 @@ const updatePassword = asynchHandler(async (req, res) => {
   });
 
   // Forgor Password
-const forgotPasswordToken = asynchHandler(async (req, res) => {
+  const forgotPasswordToken = asynchHandler(async (req, res) => {
     const {email} = req.body;
     const user = await User.findOne({email});
     if (!user) throw new Error ("User not found with this email");
     try {
         const token = await user.createPasswordResetToken();
         await user.save();
-        const resetURL = `Hi, Please follow this link to reset your password. This link is valid till 10 minutes from now. <a href='http://localhost:5001/api/user/reset-password/${token}'>Click here</>`;
+        const resetURL = `Hi, Please follow this link to reset your password. This link is valid till 10 minutes from now. <a href='http://localhost:5001/api/user/reset-password/${token}'>Click here </>`;
         const data = {
             to: email,
             text: "Hey User",
@@ -251,4 +261,24 @@ const forgotPasswordToken = asynchHandler(async (req, res) => {
     }
 });
 
-module.exports = { createUser, loginUserController, getallUser, getaUser, deleteaUser, updateaUser, blockUser, unblockUser, handleRefreshToken, logout, updatePassword, forgotPasswordToken};
+
+const resetPassword = asynchHandler(async (req, res) => {
+    const { password } = req.body;
+    const { token } = req.params;
+    const hashedToken = crypto.createHash('sha256').update(token).digest("hex");
+    const user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: Date.now() }
+    });
+    if (!user) {
+        throw new Error("Token Expired, Please try again later");
+    }
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    res.json(user);
+});
+
+
+module.exports = { createUser, loginUserController, getallUser, getaUser, deleteaUser, updateaUser, blockUser, unblockUser, handleRefreshToken, logout, updatePassword, forgotPasswordToken, resetPassword };
