@@ -9,6 +9,10 @@ const { JsonWebTokenError } = require('jsonwebtoken');
 const jwt = require('jsonwebtoken');
 const { validate } = require('../models/productModel');
 const sendEmail = require("./emailController");
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9b9e94a67d6430c2c6c5f9c327b40d915ed4dc52
 const createUser = asynchHandler(async (req, res) => {
     const email = req.body.email;
     const findUser = await User.findOne({ email: email });

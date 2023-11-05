@@ -11,8 +11,11 @@ const productRouter = require("./routes/productRoute");
 const blogRoute = require('./routes/blogRoute');
 const cookieParser = require("cookie-parser");
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 dbConnect();
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(morgan('dev'));
 

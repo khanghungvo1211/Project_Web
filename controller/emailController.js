@@ -14,7 +14,11 @@ const sendEmail = asyncHandler(async (data, req, res) => {
   });
 
   let info = await transporter.sendMail({
+<<<<<<< HEAD
     from: '"Hey 👻" <abc@gmail.com>', // sender address
+=======
+    from: '"Hey" <abc@gmail.com>', // sender address
+>>>>>>> 9b9e94a67d6430c2c6c5f9c327b40d915ed4dc52
     to: data.to, // list of receivers
     subject: data.subject, // Subject line
     text: data.text, // plain text body
